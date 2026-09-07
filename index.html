@@ -65,6 +65,7 @@ button {
   border: none;
   background: #222;
   color: white;
+  cursor: pointer;
 }
 
 #lector {
@@ -125,160 +126,248 @@ button {
 
 <div class="contenedor">
 
-<div class="tarjeta">
+  <div class="tarjeta">
 
-<h1>QAG — Control de asistencia</h1>
+    <h1>QAG — Control de asistencia</h1>
 
-<label for="docente">
-Docente
-</label>
+    <label for="docente">
+      Docente
+    </label>
 
-<select id="docente">
+    <select id="docente">
 
-<option value="">
-Seleccionar docente
-</option>
+      <option value="">
+        Seleccionar docente
+      </option>
 
-<option value="Cecilia">
-Cecilia
-</option>
+      <option value="Cecilia">
+        Cecilia
+      </option>
 
-<option value="Silvia">
-Silvia
-</option>
+      <option value="Silvia">
+        Silvia
+      </option>
 
-<option value="Carolina">
-Carolina
-</option>
+      <option value="Carolina">
+        Carolina
+      </option>
 
-<option value="Florencia">
-Florencia
-</option>
+      <option value="Florencia">
+        Florencia
+      </option>
 
-</select>
+    </select>
 
-<button onclick="iniciarScanner()">
-📷 INICIAR ESCÁNER
-</button>
+    <button type="button" onclick="iniciarScanner()">
+      📷 INICIAR ESCÁNER
+    </button>
 
-</div>
-
-
-<div id="lector"></div>
+  </div>
 
 
-<div
-id="resultado"
-class="tarjeta gris">
-
-<div class="estado">
-Esperando...
-</div>
-
-<div class="nombre">
-Seleccioná el docente y activá el escáner.
-</div>
-
-</div>
+  <div id="lector"></div>
 
 
-<div class="tarjeta">
+  <div
+    id="resultado"
+    class="tarjeta gris">
 
-<button onclick="mostrarResumen()">
-VER RESUMEN
-</button>
+    <div class="estado">
+      Esperando...
+    </div>
 
-<div
-id="resumen"
-class="oculto">
+    <div class="nombre">
+      Seleccioná el docente y activá el escáner.
+    </div>
 
-<h3 id="contador"></h3>
+  </div>
 
-<h3>Presentes</h3>
 
-<div
-id="presentes"
-class="lista">
-</div>
+  <div class="tarjeta">
 
-<h3>Ausentes</h3>
+    <button type="button" onclick="mostrarResumen()">
+      VER RESUMEN
+    </button>
 
-<div
-id="ausentes"
-class="lista">
-</div>
+    <div
+      id="resumen"
+      class="oculto">
 
-</div>
+      <h3 id="contador"></h3>
 
-</div>
+      <h3>Presentes</h3>
+
+      <div
+        id="presentes"
+        class="lista">
+      </div>
+
+      <h3>Ausentes</h3>
+
+      <div
+        id="ausentes"
+        class="lista">
+      </div>
+
+    </div>
+
+  </div>
 
 </div>
 
 
 <script>
 
-
 /*************************************************
- * PEGAR AQUÍ LA URL DE APPS SCRIPT TERMINADA EN /exec
+ * URL DE APPS SCRIPT
  *************************************************/
 
 const API_URL =
 'https://script.google.com/macros/s/AKfycbz91ha3LXqxi1y00Ol5ZMlKpovyIRuH0LaOdqrz8_-I5T09dazl29sXfhlzjqCjFEmm/exec';
 
 
-let scanner = null;
+/*************************************************
+ * VARIABLES
+ *************************************************/
 
+let scanner = null;
 let escaneando = false;
+
+
+/*************************************************
+ * INICIAR ESCÁNER
+ *************************************************/
+
+function iniciarScanner() {
+
+  const docente =
+    document.getElementById('docente').value;
+
+  if (!docente) {
+
+    alert('Seleccioná un docente.');
+
+    return;
+  }
+
+
+  // Si ya había un escáner funcionando,
+  // lo detenemos antes de iniciar otro.
+
+  if (scanner) {
+
+    scanner.stop()
+      .catch(() => {})
+      .finally(() => {
+
+        iniciarCamara(docente);
+
+      });
+
+    return;
+  }
+
+
+  iniciarCamara(docente);
+}
 
 
 /*************************************************
  * INICIAR CÁMARA
  *************************************************/
 
-function iniciarScanner() {
-  alert("BOTÓN FUNCIONA");
+function iniciarCamara(docente) {
 
-  const docente = document.getElementById('docente').value;
+  // Verificamos que la librería exista.
 
-  if (!docente) {
-    alert("Seleccioná un docente");
+  if (typeof Html5Qrcode === 'undefined') {
+
+    mostrarResultado(
+      'ERROR',
+      'No se pudo cargar la librería del escáner.',
+      'rojo'
+    );
+
     return;
   }
 
-  alert("DOCENTE: " + docente);
 
-  if (typeof Html5Qrcode === "undefined") {
-    alert("ERROR: no se cargó la librería Html5Qrcode");
-    return;
-  }
+  // Creamos el escáner.
 
-  alert("LIBRERÍA OK");
+  scanner =
+    new Html5Qrcode('lector');
 
-  scanner = new Html5Qrcode("lector");
+
+  // Iniciamos la cámara.
 
   scanner.start(
-    { facingMode: "environment" },
+
     {
-      fps: 10,
-      qrbox: {
-        width: 300,
-        height: 300
+      facingMode: 'environment'
+    },
+
+    {
+      fps: 15,
+
+      formatsToSupport: [
+        Html5QrcodeSupportedFormats.QR_CODE
+      ],
+
+      qrbox: function(viewfinderWidth, viewfinderHeight) {
+
+        const size =
+          Math.floor(
+            Math.min(
+              viewfinderWidth,
+              viewfinderHeight
+            ) * 0.75
+          );
+
+        return {
+          width: size,
+          height: size
+        };
+
       }
+
     },
-    function(decodedText) {
-      alert("QR DETECTADO: " + decodedText);
-    },
+
+    onScanSuccess,
+
     function(errorMessage) {
-      // No hacemos nada con los errores de lectura
+
+      // Este callback se ejecuta continuamente
+      // cuando todavía no encontró un QR.
+      // Por eso no mostramos mensajes aquí.
+
     }
+
   )
+
   .then(function() {
-    alert("CÁMARA INICIADA");
+
+    escaneando = true;
+
+    mostrarResultado(
+      'ESCÁNER ACTIVO',
+      'Presentá el QR del estudiante.',
+      'gris'
+    );
+
   })
+
   .catch(function(error) {
-    alert("ERROR AL INICIAR CÁMARA:\n" + error);
+
     console.error(error);
+
+    mostrarResultado(
+      'NO SE PUDO INICIAR LA CÁMARA',
+      String(error),
+      'rojo'
+    );
+
   });
+
 }
 
 
@@ -288,22 +377,15 @@ function iniciarScanner() {
 
 function onScanSuccess(decodedText, decodedResult) {
 
-  console.log("QR DETECTADO:", decodedText);
-
-  alert("QR DETECTADO: " + decodedText);
-
-  if (!escaneando)
-    return;
-
-  escaneando = false;
-
-  mostrarResultado(
-    'QR DETECTADO',
-    decodedText,
-    'verde'
+  console.log(
+    'QR DETECTADO:',
+    decodedText
   );
 
-}
+
+  if (!escaneando) {
+    return;
+  }
 
 
   escaneando = false;
@@ -330,34 +412,42 @@ function onScanSuccess(decodedText, decodedResult) {
 
       method: 'POST',
 
-      body:
+      body: JSON.stringify({
 
-        JSON.stringify({
+        accion: 'REGISTRAR',
 
-          accion:
-          'REGISTRAR',
+        id: decodedText,
 
-          id:
-          decodedText,
+        docente: docente
 
-          docente:
-          docente
+      }),
 
-        }),
-
-      redirect:
-      'follow'
+      redirect: 'follow'
 
     }
 
   )
 
   .then(
-    respuesta =>
-      respuesta.json()
+
+    respuesta => {
+
+      if (!respuesta.ok) {
+
+        throw new Error(
+          'HTTP ' + respuesta.status
+        );
+
+      }
+
+      return respuesta.json();
+
+    }
+
   )
 
   .then(
+
     resultado => {
 
       if (resultado.ok) {
@@ -371,8 +461,7 @@ function onScanSuccess(decodedText, decodedResult) {
       }
 
       else if (
-        resultado.estado ===
-        'DUPLICADO'
+        resultado.estado === 'DUPLICADO'
       ) {
 
         mostrarResultado(
@@ -387,8 +476,7 @@ function onScanSuccess(decodedText, decodedResult) {
 
         mostrarResultado(
           resultado.mensaje,
-          resultado.detalle ||
-          '',
+          resultado.detalle || '',
           'rojo'
         );
 
@@ -396,10 +484,15 @@ function onScanSuccess(decodedText, decodedResult) {
 
 
       setTimeout(
-        () => {
+
+        function() {
+
           escaneando = true;
+
         },
+
         1200
+
       );
 
     }
@@ -407,6 +500,7 @@ function onScanSuccess(decodedText, decodedResult) {
   )
 
   .catch(
+
     error => {
 
       console.error(error);
@@ -419,10 +513,15 @@ function onScanSuccess(decodedText, decodedResult) {
 
 
       setTimeout(
-        () => {
+
+        function() {
+
           escaneando = true;
+
         },
+
         1500
+
       );
 
     }
@@ -443,29 +542,21 @@ function mostrarResultado(
 ) {
 
   const resultado =
-    document
-      .getElementById(
-        'resultado'
-      );
+    document.getElementById('resultado');
 
 
   resultado.className =
-    'tarjeta ' +
-    clase;
+    'tarjeta ' + clase;
 
 
   resultado.innerHTML =
 
     '<div class="estado">' +
-
     titulo +
-
     '</div>' +
 
     '<div class="nombre">' +
-
     detalle +
-
     '</div>';
 
 }
@@ -483,31 +574,40 @@ function mostrarResumen() {
 
     {
 
-      method:
-      'POST',
+      method: 'POST',
 
-      body:
+      body: JSON.stringify({
 
-        JSON.stringify({
+        accion: 'RESUMEN'
 
-          accion:
-          'RESUMEN'
+      }),
 
-        }),
-
-      redirect:
-      'follow'
+      redirect: 'follow'
 
     }
 
   )
 
   .then(
-    respuesta =>
-      respuesta.json()
+
+    respuesta => {
+
+      if (!respuesta.ok) {
+
+        throw new Error(
+          'HTTP ' + respuesta.status
+        );
+
+      }
+
+      return respuesta.json();
+
+    }
+
   )
 
   .then(
+
     data => {
 
       if (!data.ok) {
@@ -522,19 +622,13 @@ function mostrarResumen() {
 
 
       document
-        .getElementById(
-          'resumen'
-        )
+        .getElementById('resumen')
         .classList
-        .remove(
-          'oculto'
-        );
+        .remove('oculto');
 
 
       document
-        .getElementById(
-          'contador'
-        )
+        .getElementById('contador')
         .innerText =
 
         'Presentes: ' +
@@ -547,71 +641,64 @@ function mostrarResumen() {
 
 
       const presentes =
-        document
-          .getElementById(
-            'presentes'
-          );
+        document.getElementById('presentes');
 
 
       const ausentes =
-        document
-          .getElementById(
-            'ausentes'
-          );
+        document.getElementById('ausentes');
 
 
-      presentes.innerHTML =
-        '';
+      presentes.innerHTML = '';
+      ausentes.innerHTML = '';
 
 
-      ausentes.innerHTML =
-        '';
+      data.presentes.forEach(
+
+        estudiante => {
+
+          presentes.innerHTML +=
+
+            '<div class="estudiante">' +
+
+            estudiante.id +
+
+            ' — ' +
+
+            estudiante.nombre +
+
+            '</div>';
+
+        }
+
+      );
 
 
-      data.presentes
-        .forEach(
-          estudiante => {
+      data.ausentes.forEach(
 
-            presentes.innerHTML +=
+        estudiante => {
 
-              '<div class="estudiante">' +
+          ausentes.innerHTML +=
 
-              estudiante.id +
+            '<div class="estudiante">' +
 
-              ' — ' +
+            estudiante.id +
 
-              estudiante.nombre +
+            ' — ' +
 
-              '</div>';
+            estudiante.nombre +
 
-          }
-        );
+            '</div>';
 
+        }
 
-      data.ausentes
-        .forEach(
-          estudiante => {
-
-            ausentes.innerHTML +=
-
-              '<div class="estudiante">' +
-
-              estudiante.id +
-
-              ' — ' +
-
-              estudiante.nombre +
-
-              '</div>';
-
-          }
-        );
+      );
 
     }
 
   )
 
   .catch(
+
     error => {
 
       console.error(error);
@@ -625,7 +712,6 @@ function mostrarResumen() {
   );
 
 }
-
 
 </script>
 
