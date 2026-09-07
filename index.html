@@ -268,29 +268,30 @@ function iniciarScanner() {
     );
 
 
-  scanner
-    .start(
+  scanner.start(
+  {
+    facingMode: 'environment'
+  },
+  {
+    fps: 15,
 
-      {
-        facingMode: 'environment'
-      },
+    qrbox:
+    {
+      width: 300,
+      height: 300
+    },
 
-      {
-        fps: 10,
+    formatsToSupport: [
+      Html5QrcodeSupportedFormats.QR_CODE
+    ],
 
-        qrbox:
-        {
-          width: 250,
-          height: 250
-        }
+    disableFlip: false
+  },
 
-      },
+  onScanSuccess,
 
-      onScanSuccess,
-
-      () => {}
-
-    )
+  () => {}
+)
 
     .then(() => {
 
