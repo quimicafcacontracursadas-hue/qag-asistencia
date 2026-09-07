@@ -236,82 +236,49 @@ let escaneando = false;
  *************************************************/
 
 function iniciarScanner() {
+  alert("BOTÓN FUNCIONA");
 
-  const docente =
-    document
-      .getElementById('docente')
-      .value;
-
+  const docente = document.getElementById('docente').value;
 
   if (!docente) {
-
-    alert(
-      'Seleccioná el docente.'
-    );
-
+    alert("Seleccioná un docente");
     return;
-
   }
 
+  alert("DOCENTE: " + docente);
 
-  if (scanner) {
-
-    scanner.stop()
-      .catch(() => {});
-
+  if (typeof Html5Qrcode === "undefined") {
+    alert("ERROR: no se cargó la librería Html5Qrcode");
+    return;
   }
 
+  alert("LIBRERÍA OK");
 
-  scanner =
-    new Html5Qrcode(
-      'lector'
-    );
-
+  scanner = new Html5Qrcode("lector");
 
   scanner.start(
-  {
-    facingMode: 'environment'
-  },
-  {
-    fps: 15,
-
-    
-    formatsToSupport: [
-      Html5QrcodeSupportedFormats.QR_CODE
-    ],
-
-    disableFlip: false
-  },
-
-  onScanSuccess,
-
-  () => {}
-)
-
-    .then(() => {
-
-      escaneando = true;
-
-      mostrarResultado(
-        'ESCÁNER ACTIVO',
-        'Presentá el QR del estudiante.',
-        'gris'
-      );
-
-    })
-
-    .catch(error => {
-
-      console.error(error);
-
-      mostrarResultado(
-        'NO SE PUDO INICIAR LA CÁMARA',
-        String(error),
-        'rojo'
-      );
-
-    });
-
+    { facingMode: "environment" },
+    {
+      fps: 10,
+      qrbox: {
+        width: 300,
+        height: 300
+      }
+    },
+    function(decodedText) {
+      alert("QR DETECTADO: " + decodedText);
+    },
+    function(errorMessage) {
+      // No hacemos nada con los errores de lectura
+    }
+  )
+  .then(function() {
+    alert("CÁMARA INICIADA");
+  })
+  .catch(function(error) {
+    alert("ERROR AL INICIAR CÁMARA:\n" + error);
+    console.error(error);
+  });
 }
 
 
