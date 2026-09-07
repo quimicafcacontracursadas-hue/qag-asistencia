@@ -324,12 +324,24 @@ function iniciarScanner() {
  * QR DETECTADO
  *************************************************/
 
-function onScanSuccess(
-  decodedText
-) {
+function onScanSuccess(decodedText, decodedResult) {
+
+  console.log("QR DETECTADO:", decodedText);
+
+  alert("QR DETECTADO: " + decodedText);
 
   if (!escaneando)
     return;
+
+  escaneando = false;
+
+  mostrarResultado(
+    'QR DETECTADO',
+    decodedText,
+    'verde'
+  );
+
+}
 
 
   escaneando = false;
