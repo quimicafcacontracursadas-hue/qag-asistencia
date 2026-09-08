@@ -13,8 +13,7 @@
   <title>QAG — Asistencia</title>
 
 
-  <!-- Librería para lectura de códigos QR -->
-
+  <!-- Lector de códigos QR -->
   <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
 
 
@@ -86,7 +85,6 @@
 
     #lector {
       width: 100%;
-      min-height: 300px;
     }
 
 
@@ -108,11 +106,6 @@
 
     .rojo {
       background: #ffdada;
-    }
-
-
-    .amarillo {
-      background: #fff0bc;
     }
 
 
@@ -155,8 +148,6 @@
 
   <div class="contenedor">
 
-
-    <!-- ENCABEZADO Y SELECCIÓN DE DOCENTE -->
 
     <div class="tarjeta">
 
@@ -205,12 +196,14 @@
     </div>
 
 
-    <!-- ZONA DE LA CÁMARA -->
+
+    <!-- Cámara -->
 
     <div id="lector"></div>
 
 
-    <!-- RESULTADO DEL ESCANEO -->
+
+    <!-- Resultado -->
 
     <div
       id="resultado"
@@ -230,7 +223,8 @@
     </div>
 
 
-    <!-- RESUMEN -->
+
+    <!-- Resumen -->
 
     <div class="tarjeta">
 
@@ -293,7 +287,7 @@
 
 
     /*************************************************
-     * VARIABLES GLOBALES
+     * VARIABLES
      *************************************************/
 
     let scanner = null;
@@ -326,36 +320,28 @@
       }
 
 
-      // Si existe un escáner anterior,
-      // lo detenemos antes de iniciar nuevamente.
+      // Si ya existe una cámara funcionando,
+      // la detenemos antes de iniciar nuevamente.
 
       if (scanner && escaneando) {
 
 
-        scanner
-          .stop()
+        scanner.stop()
+
+          .catch(function() {})
+
+          .finally(function() {
 
 
-          .catch(
-            function() {
+            scanner = null;
 
-              // Ignoramos errores al detener.
-
-            }
-          )
+            escaneando = false;
 
 
-          .finally(
-            function() {
+            iniciarCamara();
 
-              scanner = null;
 
-              escaneando = false;
-
-              iniciarCamara();
-
-            }
-          );
+          });
 
 
         return;
@@ -377,17 +363,14 @@
     function iniciarCamara() {
 
 
-      // Verificamos que la librería haya cargado.
-
       if (
-        typeof Html5Qrcode ===
-        'undefined'
+        typeof Html5Qrcode === 'undefined'
       ) {
 
 
         mostrarResultado(
           'ERROR',
-          'No se pudo cargar la librería del escáner QR.',
+          'No se pudo cargar la librería del lector QR.',
           'rojo'
         );
 
@@ -397,22 +380,19 @@
       }
 
 
-
-      // Limpiamos la zona del lector.
+      // Limpiamos el lector anterior.
 
       document
         .getElementById('lector')
         .innerHTML = '';
 
 
-
-      // Creamos una nueva instancia del lector.
+      // Creamos el lector.
 
       scanner =
         new Html5Qrcode(
           'lector'
         );
-
 
 
       mostrarResultado(
@@ -422,118 +402,102 @@
       );
 
 
-
-      // Intentamos utilizar preferentemente
-      // la cámara trasera.
-
-      scanner
-        .start(
+      scanner.start(
 
 
-          {
-            facingMode: {
-              ideal: 'environment'
-            }
-          },
+        // ESTA ES LA CONFIGURACIÓN QUE
+        // YA FUNCIONÓ PARA ABRIR TU CÁMARA.
+
+        {
+          facingMode: "environment"
+        },
 
 
-          {
+        {
 
 
-            // 10 cuadros por segundo suele ser
-            // suficiente y compatible.
-
-            fps: 10,
+          fps: 10,
 
 
-            // Zona amplia de detección.
+          // Zona grande para facilitar
+          // la detección.
 
-            qrbox: {
-              width: 280,
-              height: 280
-            }
+          qrbox: {
+
+            width: 320,
+
+            height: 320
+
+          }
 
 
-          },
+        },
 
 
-          // QR DETECTADO
+        // QR detectado.
 
-          function(
+        function(
+          decodedText,
+          decodedResult
+        ) {
+
+
+          onScanSuccess(
             decodedText,
             decodedResult
-          ) {
+          );
 
 
-            onScanSuccess(
-              decodedText,
-              decodedResult
-            );
+        },
 
 
-          },
+        // No hacemos nada con los errores
+        // continuos mientras busca un QR.
+
+        function() {}
 
 
-          // Mientras no detecta un QR,
-          // no mostramos errores porque este
-          // callback se ejecuta continuamente.
-
-          function() {}
+      )
 
 
-        )
+      .then(function() {
 
 
-        .then(
+        escaneando = true;
 
 
-          function() {
-
-
-            escaneando = true;
-
-
-            mostrarResultado(
-              'ESCÁNER ACTIVO',
-              'Presentá el código QR dentro del recuadro.',
-              'gris'
-            );
-
-
-          }
-
-
-        )
-
-
-        .catch(
-
-
-          function(error) {
-
-
-            console.error(
-              'ERROR CÁMARA:',
-              error
-            );
-
-
-            scanner = null;
-
-            escaneando = false;
-
-
-            mostrarResultado(
-              'NO SE PUDO INICIAR LA CÁMARA',
-              String(error),
-              'rojo'
-            );
-
-
-          }
-
-
+        mostrarResultado(
+          'ESCÁNER ACTIVO',
+          'Colocá el código QR dentro del recuadro.',
+          'gris'
         );
+
+
+      })
+
+
+      .catch(function(error) {
+
+
+        console.error(
+          'ERROR AL INICIAR:',
+          error
+        );
+
+
+        scanner = null;
+
+        escaneando = false;
+
+
+        mostrarResultado(
+          'NO SE PUDO INICIAR LA CÁMARA',
+          String(error),
+          'rojo'
+        );
+
+
+      });
 
 
     }
@@ -556,9 +520,7 @@
       );
 
 
-
-      // Evitamos múltiples detecciones
-      // del mismo QR.
+      // Evitamos detecciones repetidas.
 
       if (!escaneando) {
 
@@ -570,56 +532,41 @@
       escaneando = false;
 
 
+      // Mostramos inmediatamente lo detectado.
 
-      // Detenemos inmediatamente la cámara
-      // después de detectar el QR.
-
-      scanner
-        .stop()
-
-
-        .then(
+      mostrarResultado(
+        'QR DETECTADO ✓',
+        decodedText,
+        'verde'
+      );
 
 
-          function() {
+      // Detenemos la cámara.
+
+      if (scanner) {
 
 
-            mostrarResultado(
-              'QR DETECTADO ✓',
-              decodedText,
-              'verde'
-            );
+        scanner.stop()
 
+          .then(function() {
 
-          }
+            scanner = null;
 
+          })
 
-        )
-
-
-        .catch(
-
-
-          function(error) {
-
+          .catch(function(error) {
 
             console.error(
-              'Error al detener cámara:',
+              'Error al detener:',
               error
             );
 
+            scanner = null;
 
-            mostrarResultado(
-              'QR DETECTADO ✓',
-              decodedText,
-              'verde'
-            );
+          });
 
 
-          }
-
-
-        );
+      }
 
 
     }
@@ -655,7 +602,6 @@
 
         '</div>' +
 
-
         '<div class="nombre">' +
 
         detalle +
@@ -669,6 +615,9 @@
 
     /*************************************************
      * MOSTRAR RESUMEN
+     *
+     * Se conserva para no perder la estructura
+     * del sistema que ya teníamos.
      *************************************************/
 
     function mostrarResumen() {
@@ -686,20 +635,16 @@
           method: 'POST',
 
 
-          body:
-
-            JSON.stringify({
+          body: JSON.stringify({
 
 
-              accion:
-                'RESUMEN'
+            accion: 'RESUMEN'
 
 
-            }),
+          }),
 
 
-          redirect:
-            'follow'
+          redirect: 'follow'
 
 
         }
@@ -708,204 +653,137 @@
       )
 
 
-      .then(
+      .then(function(respuesta) {
 
 
-        function(respuesta) {
+        if (!respuesta.ok) {
 
 
-          if (
-            !respuesta.ok
-          ) {
-
-
-            throw new Error(
-              'HTTP ' +
-              respuesta.status
-            );
-
-
-          }
-
-
-          return respuesta.json();
-
-
-        }
-
-
-      )
-
-
-      .then(
-
-
-        function(data) {
-
-
-          if (
-            !data.ok
-          ) {
-
-
-            alert(
-              data.mensaje
-            );
-
-
-            return;
-
-
-          }
-
-
-
-          document
-            .getElementById(
-              'resumen'
-            )
-
-
-            .classList
-
-
-            .remove(
-              'oculto'
-            );
-
-
-
-          document
-            .getElementById(
-              'contador'
-            )
-
-
-            .innerText =
-
-
-              'Presentes: ' +
-
-
-              data.presentes.length +
-
-
-              ' / ' +
-
-
-              data.total;
-
-
-
-          const presentes =
-
-            document.getElementById(
-              'presentes'
-            );
-
-
-
-          const ausentes =
-
-            document.getElementById(
-              'ausentes'
-            );
-
-
-
-          presentes.innerHTML = '';
-
-          ausentes.innerHTML = '';
-
-
-
-          data.presentes.forEach(
-
-
-            function(estudiante) {
-
-
-              presentes.innerHTML +=
-
-
-                '<div class="estudiante">' +
-
-
-                estudiante.id +
-
-
-                ' — ' +
-
-
-                estudiante.nombre +
-
-
-                '</div>';
-
-
-            }
-
-
-          );
-
-
-
-          data.ausentes.forEach(
-
-
-            function(estudiante) {
-
-
-              ausentes.innerHTML +=
-
-
-                '<div class="estudiante">' +
-
-
-                estudiante.id +
-
-
-                ' — ' +
-
-
-                estudiante.nombre +
-
-
-                '</div>';
-
-
-            }
-
-
+          throw new Error(
+            'HTTP ' +
+            respuesta.status
           );
 
 
         }
 
 
-      )
+        return respuesta.json();
 
 
-      .catch(
+      })
 
 
-        function(error) {
+      .then(function(data) {
 
 
-          console.error(
-            error
-          );
+        if (!data.ok) {
 
 
           alert(
-            'Error al obtener el resumen.'
+            data.mensaje ||
+            'No se pudo obtener el resumen.'
           );
 
+
+          return;
 
         }
 
 
-      );
+        document
+          .getElementById('resumen')
+          .classList
+          .remove('oculto');
+
+
+        document
+          .getElementById('contador')
+          .innerText =
+
+          'Presentes: ' +
+
+          data.presentes.length +
+
+          ' / ' +
+
+          data.total;
+
+
+        const presentes =
+          document.getElementById(
+            'presentes'
+          );
+
+
+        const ausentes =
+          document.getElementById(
+            'ausentes'
+          );
+
+
+        presentes.innerHTML = '';
+
+        ausentes.innerHTML = '';
+
+
+        data.presentes.forEach(
+          function(estudiante) {
+
+
+            presentes.innerHTML +=
+
+              '<div class="estudiante">' +
+
+              estudiante.id +
+
+              ' — ' +
+
+              estudiante.nombre +
+
+              '</div>';
+
+
+          }
+        );
+
+
+        data.ausentes.forEach(
+          function(estudiante) {
+
+
+            ausentes.innerHTML +=
+
+              '<div class="estudiante">' +
+
+              estudiante.id +
+
+              ' — ' +
+
+              estudiante.nombre +
+
+              '</div>';
+
+
+          }
+        );
+
+
+      })
+
+
+      .catch(function(error) {
+
+
+        console.error(error);
+
+
+        alert(
+          'Error al obtener el resumen.'
+        );
+
+
+      });
 
 
     }
