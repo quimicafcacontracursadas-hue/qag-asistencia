@@ -138,12 +138,23 @@
 
   <script>
 
-    const API_URL =
-      "https://script.google.com/macros/s/AKfycbz91ha3LXqxi1y00Ol5ZMlKpovyIRuH0LaOdqrz8_-I5T09dazl29sXfhlzjqCjFEmm/exec";
+    /*
+     * URL DE LA NUEVA IMPLEMENTACIÓN
+     * DE GOOGLE APPS SCRIPT
+     */
 
-    const video = document.getElementById("camara");
-    const canvas = document.getElementById("canvas");
-    const ctx = canvas.getContext("2d");
+    const API_URL =
+      "https://script.google.com/macros/s/AKfycbxHADOqqLPR5ED2rjfy1yuxhuGKpOZql2W-BbT_JuQSe3x_-hFA5cKJ1ombCs-A0QAp/exec";
+
+
+    const video =
+      document.getElementById("camara");
+
+    const canvas =
+      document.getElementById("canvas");
+
+    const ctx =
+      canvas.getContext("2d");
 
     const docenteSelect =
       document.getElementById("docente");
@@ -157,8 +168,11 @@
     const detalle =
       document.getElementById("detalle");
 
+
     let stream = null;
+
     let escaneando = false;
+
     let procesando = false;
 
 
@@ -172,8 +186,10 @@
 
       if (procesando) return;
 
+
       const docente =
         docenteSelect.value;
+
 
       if (!docente) {
 
@@ -185,40 +201,56 @@
         return;
       }
 
+
       detalle.textContent = "";
+
 
       try {
 
         stream =
           await navigator.mediaDevices.getUserMedia({
+
             video: {
               facingMode: "environment"
             },
+
             audio: false
+
           });
 
-        video.srcObject = stream;
+
+        video.srcObject =
+          stream;
+
 
         escaneando = true;
 
+
         botonCamara.textContent =
           "📷 ESCANEANDO...";
+
 
         mostrarEstado(
           "Esperando código QR...",
           "esperando"
         );
 
-        requestAnimationFrame(escanear);
+
+        requestAnimationFrame(
+          escanear
+        );
+
 
       } catch (error) {
 
         console.error(error);
 
+
         mostrarEstado(
           "NO SE PUDO ACCEDER A LA CÁMARA",
           "error"
         );
+
       }
     }
 
@@ -227,16 +259,20 @@
 
       if (!escaneando) return;
 
+
       if (
         video.readyState ===
         video.HAVE_ENOUGH_DATA
       ) {
 
+
         canvas.width =
           video.videoWidth;
 
+
         canvas.height =
           video.videoHeight;
+
 
         ctx.drawImage(
           video,
@@ -246,6 +282,7 @@
           canvas.height
         );
 
+
         const imageData =
           ctx.getImageData(
             0,
@@ -253,6 +290,7 @@
             canvas.width,
             canvas.height
           );
+
 
         const codigo =
           jsQR(
@@ -265,28 +303,40 @@
             }
           );
 
+
         if (codigo) {
+
 
           console.log(
             "QR DETECTADO:",
             codigo.data
           );
 
+
           escaneando = false;
 
+
           detenerCamara();
+
 
           registrarAsistencia(
             codigo.data
           );
 
+
           return;
         }
       }
 
+
       setTimeout(() => {
-        requestAnimationFrame(escanear);
+
+        requestAnimationFrame(
+          escanear
+        );
+
       }, 100);
+
     }
 
 
@@ -294,122 +344,88 @@
 
       escaneando = false;
 
+
       if (stream) {
 
         stream
           .getTracks()
           .forEach(track => {
+
             track.stop();
+
           });
 
         stream = null;
       }
 
+
       video.srcObject = null;
+
 
       botonCamara.textContent =
         "📷 INICIAR ESCÁNER";
+
     }
 
 
-    async function registrarAsistencia(id) {
+    /*
+     * =====================================================
+     * REGISTRAR ASISTENCIA MEDIANTE JSONP
+     * =====================================================
+     */
+
+    function registrarAsistencia(id) {
 
       if (procesando) return;
 
+
       procesando = true;
+
 
       const docente =
         docenteSelect.value;
+
 
       mostrarEstado(
         "PROCESANDO ASISTENCIA...",
         "procesando"
       );
 
+
       detalle.textContent =
         "QR detectado: " + id;
 
 
-      const datosEnviar = {
-        accion: "REGISTRAR",
-        id: id,
-        docente: docente
-      };
+      /*
+       * Creamos un nombre único para
+       * la función de respuesta.
+       */
+
+      const callbackName =
+        "qagCallback_" +
+        Date.now();
 
 
-      try {
+      /*
+       * Esta función recibirá la respuesta
+       * enviada por Google Apps Script.
+       */
 
-        /*
-         * IMPORTANTE:
-         *
-         * No usamos Content-Type.
-         * Google Apps Script recibe
-         * el JSON directamente desde
-         * e.postData.contents.
-         */
+      window[callbackName] =
+        function(datos) {
 
-        const respuesta =
-          await fetch(
-            API_URL,
-            {
-              method: "POST",
-
-              body: JSON.stringify(
-                datosEnviar
-              ),
-
-              redirect: "follow"
-            }
+          console.log(
+            "RESPUESTA DEL SERVIDOR:",
+            datos
           );
 
 
-        const texto =
-          await respuesta.text();
-
-        console.log(
-          "RESPUESTA CRUDA:",
-          texto
-        );
-
-
-        if (!respuesta.ok) {
-
-          throw new Error(
-            "HTTP " +
-            respuesta.status
-          );
-        }
-
-
-        let datos;
-
-        try {
-
-          datos =
-            JSON.parse(texto);
-
-        } catch (error) {
-
-          console.error(
-            "RESPUESTA NO JSON:",
-            texto
-          );
-
-          throw new Error(
-            "El servidor no devolvió JSON."
-          );
-        }
-
-
-        console.log(
-          "RESPUESTA DEL SERVIDOR:",
-          datos
-        );
-
-
-        if (datos.ok) {
+          /*
+           * ASISTENCIA REGISTRADA
+           */
 
           if (
+            datos.ok &&
             datos.estado ===
             "REGISTRADO"
           ) {
@@ -419,6 +435,7 @@
               "ok"
             );
 
+
             detalle.innerHTML =
               "<strong>" +
               (datos.detalle || "") +
@@ -426,6 +443,11 @@
               (datos.clase || "");
 
           }
+
+
+          /*
+           * YA REGISTRADO
+           */
 
           else if (
             datos.estado ===
@@ -437,52 +459,141 @@
               "procesando"
             );
 
+
             detalle.textContent =
               datos.detalle || "";
 
           }
 
+
+          /*
+           * CUALQUIER OTRO ERROR
+           */
+
           else {
 
             mostrarEstado(
               datos.mensaje ||
-              "OPERACIÓN COMPLETADA",
-              "ok"
+              "ERROR",
+              "error"
             );
+
+
+            detalle.textContent =
+              datos.detalle || "";
+
           }
 
-        } else {
+
+          /*
+           * Eliminamos la función
+           * temporal del navegador.
+           */
+
+          delete window[callbackName];
+
+
+          /*
+           * Eliminamos el script
+           * temporal de la página.
+           */
+
+          const script =
+            document.getElementById(
+              callbackName
+            );
+
+
+          if (script) {
+            script.remove();
+          }
+
+
+          procesando = false;
+
+        };
+
+
+      /*
+       * Construimos la URL que llama
+       * al doGet(e) de Apps Script.
+       */
+
+      const url =
+        API_URL +
+        "?accion=REGISTRAR" +
+        "&id=" +
+        encodeURIComponent(id) +
+        "&docente=" +
+        encodeURIComponent(docente) +
+        "&callback=" +
+        encodeURIComponent(callbackName);
+
+
+      console.log(
+        "URL DE REGISTRO:",
+        url
+      );
+
+
+      /*
+       * Creamos un <script>.
+       *
+       * Esto permite que GitHub Pages
+       * reciba la respuesta de Apps Script
+       * sin problemas de CORS.
+       */
+
+      const script =
+        document.createElement("script");
+
+
+      script.id =
+        callbackName;
+
+
+      script.src =
+        url;
+
+
+      /*
+       * Si el script no puede cargarse,
+       * mostramos error.
+       */
+
+      script.onerror =
+        function() {
+
+          console.error(
+            "ERROR AL COMUNICARSE CON APPS SCRIPT"
+          );
+
 
           mostrarEstado(
-            datos.mensaje ||
-            "ERROR",
+            "ERROR DE CONEXIÓN CON EL SERVIDOR",
             "error"
           );
 
+
           detalle.textContent =
-            datos.detalle || "";
-        }
+            "No se pudo completar la comunicación con Apps Script.";
 
 
-      } catch (error) {
+          delete window[callbackName];
 
-        console.error(
-          "ERROR AL REGISTRAR:",
-          error
-        );
 
-        mostrarEstado(
-          "ERROR DE CONEXIÓN CON EL SERVIDOR",
-          "error"
-        );
+          script.remove();
 
-        detalle.textContent =
-          "No se pudo completar la comunicación con Apps Script.";
 
-      } finally {
+          procesando = false;
 
-        procesando = false;
-      }
+        };
+
+
+      document.body.appendChild(
+        script
+      );
+
     }
 
 
@@ -494,8 +605,10 @@
       estado.textContent =
         texto;
 
+
       estado.className =
         clase;
+
     }
 
   </script>
