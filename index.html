@@ -1,183 +1,632 @@
 <!DOCTYPE html>
 <html lang="es">
-
 <head>
-
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  <meta
-    name="viewport"
-    content="width=device-width, initial-scale=1.0"
-  >
+  <title>QAG — Control de asistencia</title>
 
-  <title>Prueba de cámara QAG</title>
-
+  <!-- Lector QR: solo decodifica, NO controla la cámara -->
+  <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
   <style>
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
       padding: 20px;
       font-family: Arial, sans-serif;
-      background: #f2f4f7;
+      background: #f2f2f2;
+      color: #222;
     }
 
+    .contenedor {
+      max-width: 700px;
+      margin: auto;
+    }
 
-    button {
-      width: 100%;
-      padding: 18px;
-      font-size: 18px;
+    h1 {
+      text-align: center;
       margin-bottom: 20px;
     }
 
-
-    video {
-      width: 100%;
-      max-width: 600px;
-      display: block;
-      margin: auto;
-      background: black;
-    }
-
-
-    #estado {
-      margin-top: 20px;
-      padding: 20px;
+    .tarjeta {
       background: white;
-      font-size: 18px;
-      text-align: center;
-      white-space: pre-wrap;
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 16px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
     }
 
+    label {
+      display: block;
+      font-weight: bold;
+      margin-bottom: 8px;
+    }
+
+    select,
+    button {
+      width: 100%;
+      padding: 14px;
+      font-size: 17px;
+      border-radius: 10px;
+      border: 1px solid #ccc;
+    }
+
+    button {
+      margin-top: 12px;
+      cursor: pointer;
+      font-weight: bold;
+      background: #222;
+      color: white;
+      border: none;
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    #lector {
+      position: relative;
+      background: #000;
+      border-radius: 14px;
+      overflow: hidden;
+      min-height: 250px;
+    }
+
+    #video {
+      width: 100%;
+      height: auto;
+      display: block;
+      background: #000;
+    }
+
+    #canvas {
+      display: none;
+    }
+
+    /* Guía visual */
+    .marco {
+      position: absolute;
+      width: 65%;
+      aspect-ratio: 1 / 1;
+      left: 17.5%;
+      top: 50%;
+      transform: translateY(-50%);
+      pointer-events: none;
+    }
+
+    .esquina {
+      position: absolute;
+      width: 35px;
+      height: 35px;
+      border-color: #00ff66;
+      border-style: solid;
+    }
+
+    .arriba-izq {
+      top: 0;
+      left: 0;
+      border-width: 4px 0 0 4px;
+    }
+
+    .arriba-der {
+      top: 0;
+      right: 0;
+      border-width: 4px 4px 0 0;
+    }
+
+    .abajo-izq {
+      bottom: 0;
+      left: 0;
+      border-width: 0 0 4px 4px;
+    }
+
+    .abajo-der {
+      bottom: 0;
+      right: 0;
+      border-width: 0 4px 4px 0;
+    }
+
+    .gris {
+      background: #eeeeee;
+    }
+
+    .verde {
+      background: #d9f7df;
+      border-left: 6px solid #19a347;
+    }
+
+    .rojo {
+      background: #ffdede;
+      border-left: 6px solid #d22;
+    }
+
+    .estado {
+      font-weight: bold;
+      margin-bottom: 6px;
+    }
+
+    .dato {
+      word-break: break-word;
+      font-size: 18px;
+    }
+
+    .nota {
+      text-align: center;
+      color: #666;
+      font-size: 14px;
+      margin-top: 12px;
+    }
   </style>
-
 </head>
-
 
 <body>
 
+  <div class="contenedor">
 
-  <h2>QAG — Prueba de cámara</h2>
+    <h1>QAG — Control de asistencia</h1>
 
+    <div class="tarjeta">
 
-  <button onclick="abrirCamara()">
+      <label for="docente">Docente</label>
 
-    ABRIR CÁMARA
+      <select id="docente">
+        <option value="">Seleccionar docente...</option>
+        <option value="Cecilia">Cecilia</option>
+        <option value="Silvia">Silvia</option>
+        <option value="Carolina">Carolina</option>
+        <option value="Florencia">Florencia</option>
+      </select>
 
-  </button>
+      <button onclick="iniciarScanner()">
+        📷 INICIAR ESCÁNER
+      </button>
 
+    </div>
 
-  <video
-    id="video"
-    autoplay
-    playsinline
-  ></video>
+    <div id="lector">
 
+      <video
+        id="video"
+        autoplay
+        playsinline
+        muted>
+      </video>
 
-  <div id="estado">
+      <div class="marco">
+        <div class="esquina arriba-izq"></div>
+        <div class="esquina arriba-der"></div>
+        <div class="esquina abajo-izq"></div>
+        <div class="esquina abajo-der"></div>
+      </div>
 
-    Presioná ABRIR CÁMARA.
+    </div>
+
+    <canvas id="canvas"></canvas>
+
+    <div id="resultado" class="tarjeta gris">
+
+      <div class="estado">
+        ESTADO
+      </div>
+
+      <div class="dato">
+        Seleccioná un docente e iniciá el escáner.
+      </div>
+
+    </div>
+
+    <div class="nota">
+      Prueba de lectura QR — todavía no envía datos a Google Sheets.
+    </div>
 
   </div>
 
 
-
   <script>
 
+    /*
+     * =========================================================
+     * CONFIGURACIÓN
+     * =========================================================
+     */
 
-    async function abrirCamara() {
+    const API_URL =
+      'https://script.google.com/macros/s/AKfycbz91ha3LXqxi1y00Ol5ZMlKpovyIRuH0LaOdqrz8_-I5T09dazl29sXfhlzjqCjFEmm/exec';
 
 
-      const estado =
-        document.getElementById(
-          'estado'
+    /*
+     * =========================================================
+     * VARIABLES
+     * =========================================================
+     */
+
+    let stream = null;
+    let escaneando = false;
+    let temporizador = null;
+
+
+    /*
+     * =========================================================
+     * ELEMENTOS
+     * =========================================================
+     */
+
+    const video = document.getElementById('video');
+    const canvas = document.getElementById('canvas');
+    const contexto = canvas.getContext('2d', {
+      willReadFrequently: true
+    });
+
+
+    /*
+     * =========================================================
+     * INICIAR ESCÁNER
+     * =========================================================
+     */
+
+    async function iniciarScanner() {
+
+      const docente =
+        document.getElementById('docente').value;
+
+      if (!docente) {
+
+        alert('Seleccioná un docente.');
+
+        return;
+      }
+
+
+      if (typeof jsQR === 'undefined') {
+
+        mostrarResultado(
+          'ERROR',
+          'No se pudo cargar el lector QR.',
+          'rojo'
         );
 
+        return;
+      }
 
-      estado.innerText =
-        'Solicitando acceso a la cámara...';
+
+      // Si ya había una cámara funcionando,
+      // la detenemos antes de iniciar otra.
+      detenerCamara();
+
+
+      mostrarResultado(
+        'INICIANDO CÁMARA',
+        'Esperá un momento...',
+        'gris'
+      );
 
 
       try {
 
+        /*
+         * IMPORTANTE:
+         * Acá usamos directamente la cámara del teléfono.
+         * jsQR se ocupa únicamente de leer los cuadros.
+         */
 
-        const stream =
+        stream = await navigator.mediaDevices.getUserMedia({
 
-          await navigator
-            .mediaDevices
-            .getUserMedia(
+          video: {
+            facingMode: 'environment'
+          },
 
+          audio: false
 
-              {
-
-
-                video: {
-
-
-                  facingMode:
-                    'environment'
-
-
-                },
+        });
 
 
-                audio: false
+        video.srcObject = stream;
+
+        await video.play();
 
 
-              }
+        /*
+         * Esperamos hasta tener las dimensiones reales
+         * del video.
+         */
+
+        if (!video.videoWidth || !video.videoHeight) {
+
+          await new Promise(function(resolve) {
+
+            video.onloadedmetadata = function() {
+              resolve();
+            };
+
+          });
+
+        }
 
 
-            );
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
 
-
-        const video =
-          document.getElementById(
-            'video'
-          );
+        escaneando = true;
 
 
-        video.srcObject =
-          stream;
-
-
-
-        estado.innerText =
-
-          'CÁMARA ABIERTA CORRECTAMENTE ✓';
-
-
-      }
-
-
-      catch (error) {
-
-
-        console.error(
-          error
+        mostrarResultado(
+          'ESCÁNER ACTIVO',
+          'Apuntá al QR. Buscando código...',
+          'gris'
         );
 
 
-        estado.innerText =
+        escanearFrame();
 
-          'ERROR AL ABRIR LA CÁMARA:\n\n' +
 
-          error.name +
+      } catch (error) {
 
-          '\n\n' +
+        console.error(error);
 
-          error.message;
-
+        mostrarResultado(
+          'NO SE PUDO INICIAR LA CÁMARA',
+          String(error),
+          'rojo'
+        );
 
       }
-
 
     }
 
 
+    /*
+     * =========================================================
+     * LEER CUADROS DE LA CÁMARA
+     * =========================================================
+     */
+
+    function escanearFrame() {
+
+      if (!escaneando) {
+        return;
+      }
+
+
+      if (
+        video.readyState >= 2 &&
+        video.videoWidth > 0 &&
+        video.videoHeight > 0
+      ) {
+
+        /*
+         * Si cambió la resolución de la cámara,
+         * actualizamos el canvas.
+         */
+
+        if (
+          canvas.width !== video.videoWidth ||
+          canvas.height !== video.videoHeight
+        ) {
+
+          canvas.width = video.videoWidth;
+          canvas.height = video.videoHeight;
+
+        }
+
+
+        /*
+         * Copiamos un cuadro de video al canvas.
+         */
+
+        contexto.drawImage(
+          video,
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
+
+
+        /*
+         * Obtenemos los píxeles.
+         */
+
+        let imagen;
+
+        try {
+
+          imagen = contexto.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
+
+        } catch (error) {
+
+          console.error(error);
+
+          programarSiguienteFrame();
+
+          return;
+        }
+
+
+        /*
+         * jsQR intenta encontrar un QR
+         * dentro de toda la imagen.
+         */
+
+        const codigo = jsQR(
+          imagen.data,
+          imagen.width,
+          imagen.height,
+          {
+            inversionAttempts: 'attemptBoth'
+          }
+        );
+
+
+        /*
+         * QR ENCONTRADO
+         */
+
+        if (codigo && codigo.data) {
+
+          escaneando = false;
+
+          detenerCamara();
+
+
+          mostrarResultado(
+            'QR DETECTADO ✓',
+            codigo.data,
+            'verde'
+          );
+
+
+          console.log(
+            'QR DETECTADO:',
+            codigo.data
+          );
+
+
+          /*
+           * POR AHORA NO ENVIAMOS NADA A GOOGLE SHEETS.
+           *
+           * El objetivo de esta prueba es comprobar
+           * que el teléfono efectivamente lea:
+           *
+           * QAG001
+           *
+           * Una vez confirmado eso, conectamos esta parte
+           * con el procesamiento de asistencia.
+           */
+
+          return;
+        }
+
+      }
+
+
+      programarSiguienteFrame();
+
+    }
+
+
+    /*
+     * =========================================================
+     * PROGRAMAR PRÓXIMO CUADRO
+     * =========================================================
+     */
+
+    function programarSiguienteFrame() {
+
+      if (!escaneando) {
+        return;
+      }
+
+
+      temporizador = setTimeout(function() {
+
+        requestAnimationFrame(
+          escanearFrame
+        );
+
+      }, 100);
+
+    }
+
+
+    /*
+     * =========================================================
+     * DETENER CÁMARA
+     * =========================================================
+     */
+
+    function detenerCamara() {
+
+      escaneando = false;
+
+
+      if (temporizador) {
+
+        clearTimeout(temporizador);
+
+        temporizador = null;
+
+      }
+
+
+      if (stream) {
+
+        stream.getTracks().forEach(function(track) {
+
+          track.stop();
+
+        });
+
+        stream = null;
+
+      }
+
+
+      video.srcObject = null;
+
+    }
+
+
+    /*
+     * =========================================================
+     * MOSTRAR RESULTADO
+     * =========================================================
+     */
+
+    function mostrarResultado(
+      titulo,
+      mensaje,
+      clase
+    ) {
+
+      const resultado =
+        document.getElementById('resultado');
+
+
+      resultado.className =
+        'tarjeta ' + clase;
+
+
+      resultado.innerHTML =
+
+        '<div class="estado">' +
+          titulo +
+        '</div>' +
+
+        '<div class="dato">' +
+          escaparHTML(mensaje) +
+        '</div>';
+
+    }
+
+
+    /*
+     * =========================================================
+     * SEGURIDAD PARA MOSTRAR TEXTO DEL QR
+     * =========================================================
+     */
+
+    function escaparHTML(texto) {
+
+      return String(texto)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#039;');
+
+    }
+
   </script>
 
-
 </body>
-
 </html>
