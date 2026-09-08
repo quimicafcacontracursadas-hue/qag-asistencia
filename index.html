@@ -10,132 +10,43 @@
     content="width=device-width, initial-scale=1.0"
   >
 
-  <title>QAG — Asistencia</title>
-
-
-  <!-- Lector de códigos QR -->
-  <script src="https://unpkg.com/html5-qrcode@2.3.8/html5-qrcode.min.js"></script>
+  <title>Prueba de cámara QAG</title>
 
 
   <style>
 
-    * {
-      box-sizing: border-box;
-    }
-
-
     body {
       margin: 0;
-      font-family: Arial, Helvetica, sans-serif;
+      padding: 20px;
+      font-family: Arial, sans-serif;
       background: #f2f4f7;
     }
 
 
-    .contenedor {
-      max-width: 650px;
-      margin: auto;
-      padding: 15px;
-    }
-
-
-    .tarjeta {
-      background: white;
-      border-radius: 16px;
+    button {
+      width: 100%;
       padding: 18px;
-      margin-bottom: 15px;
-      box-shadow: 0 2px 10px rgba(0,0,0,.10);
+      font-size: 18px;
+      margin-bottom: 20px;
     }
 
 
-    h1 {
-      margin-top: 0;
-      font-size: 26px;
-    }
-
-
-    label {
+    video {
+      width: 100%;
+      max-width: 600px;
       display: block;
-      font-weight: bold;
-      margin-bottom: 7px;
+      margin: auto;
+      background: black;
     }
 
 
-    select,
-    button {
-      width: 100%;
-      padding: 15px;
-      font-size: 17px;
-      border-radius: 10px;
-    }
-
-
-    select {
-      border: 1px solid #ccc;
-    }
-
-
-    button {
-      margin-top: 12px;
-      border: none;
-      background: #222;
-      color: white;
-      cursor: pointer;
-    }
-
-
-    #lector {
-      width: 100%;
-    }
-
-
-    #resultado {
-      min-height: 120px;
+    #estado {
+      margin-top: 20px;
+      padding: 20px;
+      background: white;
+      font-size: 18px;
       text-align: center;
-    }
-
-
-    .gris {
-      background: #eee;
-    }
-
-
-    .verde {
-      background: #d9f5dc;
-    }
-
-
-    .rojo {
-      background: #ffdada;
-    }
-
-
-    .estado {
-      font-weight: bold;
-      font-size: 19px;
-    }
-
-
-    .nombre {
-      font-size: 23px;
-      margin-top: 12px;
-      font-weight: bold;
-    }
-
-
-    .oculto {
-      display: none;
-    }
-
-
-    .lista {
-      max-height: 250px;
-      overflow-y: auto;
-    }
-
-
-    .estudiante {
-      padding: 8px;
-      border-bottom: 1px solid #eee;
+      white-space: pre-wrap;
     }
 
   </style>
@@ -146,129 +57,26 @@
 <body>
 
 
-  <div class="contenedor">
+  <h2>QAG — Prueba de cámara</h2>
 
 
-    <div class="tarjeta">
+  <button onclick="abrirCamara()">
+
+    ABRIR CÁMARA
+
+  </button>
 
 
-      <h1>QAG — Control de asistencia</h1>
+  <video
+    id="video"
+    autoplay
+    playsinline
+  ></video>
 
 
-      <label for="docente">
-        Docente
-      </label>
+  <div id="estado">
 
-
-      <select id="docente">
-
-        <option value="">
-          Seleccionar docente
-        </option>
-
-        <option value="Cecilia">
-          Cecilia
-        </option>
-
-        <option value="Silvia">
-          Silvia
-        </option>
-
-        <option value="Carolina">
-          Carolina
-        </option>
-
-        <option value="Florencia">
-          Florencia
-        </option>
-
-      </select>
-
-
-      <button
-        type="button"
-        onclick="iniciarScanner()"
-      >
-        📷 INICIAR ESCÁNER
-      </button>
-
-
-    </div>
-
-
-
-    <!-- Cámara -->
-
-    <div id="lector"></div>
-
-
-
-    <!-- Resultado -->
-
-    <div
-      id="resultado"
-      class="tarjeta gris"
-    >
-
-      <div class="estado">
-        Esperando...
-      </div>
-
-
-      <div class="nombre">
-        Seleccioná el docente y activá el escáner.
-      </div>
-
-
-    </div>
-
-
-
-    <!-- Resumen -->
-
-    <div class="tarjeta">
-
-
-      <button
-        type="button"
-        onclick="mostrarResumen()"
-      >
-        VER RESUMEN
-      </button>
-
-
-      <div
-        id="resumen"
-        class="oculto"
-      >
-
-
-        <h3 id="contador"></h3>
-
-
-        <h3>Presentes</h3>
-
-
-        <div
-          id="presentes"
-          class="lista"
-        ></div>
-
-
-        <h3>Ausentes</h3>
-
-
-        <div
-          id="ausentes"
-          class="lista"
-        ></div>
-
-
-      </div>
-
-
-    </div>
-
+    Presioná ABRIR CÁMARA.
 
   </div>
 
@@ -277,513 +85,91 @@
   <script>
 
 
-    /*************************************************
-     * URL DE APPS SCRIPT
-     *************************************************/
-
-    const API_URL =
-      'https://script.google.com/macros/s/AKfycbz91ha3LXqxi1y00Ol5ZMlKpovyIRuH0LaOdqrz8_-I5T09dazl29sXfhlzjqCjFEmm/exec';
+    async function abrirCamara() {
 
 
-
-    /*************************************************
-     * VARIABLES
-     *************************************************/
-
-    let scanner = null;
-
-    let escaneando = false;
-
-
-
-    /*************************************************
-     * INICIAR ESCÁNER
-     *************************************************/
-
-    function iniciarScanner() {
-
-
-      const docente =
-        document
-          .getElementById('docente')
-          .value;
-
-
-      if (!docente) {
-
-        alert(
-          'Seleccioná un docente.'
-        );
-
-        return;
-
-      }
-
-
-      // Si ya existe una cámara funcionando,
-      // la detenemos antes de iniciar nuevamente.
-
-      if (scanner && escaneando) {
-
-
-        scanner.stop()
-
-          .catch(function() {})
-
-          .finally(function() {
-
-
-            scanner = null;
-
-            escaneando = false;
-
-
-            iniciarCamara();
-
-
-          });
-
-
-        return;
-
-      }
-
-
-      iniciarCamara();
-
-
-    }
-
-
-
-    /*************************************************
-     * INICIAR CÁMARA
-     *************************************************/
-
-    function iniciarCamara() {
-
-
-      if (
-        typeof Html5Qrcode === 'undefined'
-      ) {
-
-
-        mostrarResultado(
-          'ERROR',
-          'No se pudo cargar la librería del lector QR.',
-          'rojo'
+      const estado =
+        document.getElementById(
+          'estado'
         );
 
 
-        return;
-
-      }
-
-
-      // Limpiamos el lector anterior.
-
-      document
-        .getElementById('lector')
-        .innerHTML = '';
+      estado.innerText =
+        'Solicitando acceso a la cámara...';
 
 
-      // Creamos el lector.
-
-      scanner =
-        new Html5Qrcode(
-          'lector'
-        );
+      try {
 
 
-      mostrarResultado(
-        'INICIANDO CÁMARA...',
-        'Esperá un momento.',
-        'gris'
-      );
+        const stream =
+
+          await navigator
+            .mediaDevices
+            .getUserMedia(
 
 
-      scanner.start(
+              {
 
 
-        // ESTA ES LA CONFIGURACIÓN QUE
-        // YA FUNCIONÓ PARA ABRIR TU CÁMARA.
-
-        {
-          facingMode: "environment"
-        },
+                video: {
 
 
-        {
+                  facingMode:
+                    'environment'
 
 
-          fps: 10,
+                },
 
 
-          // Zona grande para facilitar
-          // la detección.
-
-          qrbox: {
-
-            width: 320,
-
-            height: 320
-
-          }
+                audio: false
 
 
-        },
+              }
 
 
-        // QR detectado.
-
-        function(
-          decodedText,
-          decodedResult
-        ) {
+            );
 
 
-          onScanSuccess(
-            decodedText,
-            decodedResult
+
+        const video =
+          document.getElementById(
+            'video'
           );
 
 
-        },
+        video.srcObject =
+          stream;
 
 
-        // No hacemos nada con los errores
-        // continuos mientras busca un QR.
 
-        function() {}
+        estado.innerText =
 
-
-      )
+          'CÁMARA ABIERTA CORRECTAMENTE ✓';
 
 
-      .then(function() {
+      }
 
 
-        escaneando = true;
-
-
-        mostrarResultado(
-          'ESCÁNER ACTIVO',
-          'Colocá el código QR dentro del recuadro.',
-          'gris'
-        );
-
-
-      })
-
-
-      .catch(function(error) {
+      catch (error) {
 
 
         console.error(
-          'ERROR AL INICIAR:',
           error
         );
 
 
-        scanner = null;
+        estado.innerText =
 
-        escaneando = false;
+          'ERROR AL ABRIR LA CÁMARA:\n\n' +
 
+          error.name +
 
-        mostrarResultado(
-          'NO SE PUDO INICIAR LA CÁMARA',
-          String(error),
-          'rojo'
-        );
+          '\n\n' +
 
-
-      });
-
-
-    }
-
-
-
-    /*************************************************
-     * QR DETECTADO
-     *************************************************/
-
-    function onScanSuccess(
-      decodedText,
-      decodedResult
-    ) {
-
-
-      console.log(
-        'QR DETECTADO:',
-        decodedText
-      );
-
-
-      // Evitamos detecciones repetidas.
-
-      if (!escaneando) {
-
-        return;
-
-      }
-
-
-      escaneando = false;
-
-
-      // Mostramos inmediatamente lo detectado.
-
-      mostrarResultado(
-        'QR DETECTADO ✓',
-        decodedText,
-        'verde'
-      );
-
-
-      // Detenemos la cámara.
-
-      if (scanner) {
-
-
-        scanner.stop()
-
-          .then(function() {
-
-            scanner = null;
-
-          })
-
-          .catch(function(error) {
-
-            console.error(
-              'Error al detener:',
-              error
-            );
-
-            scanner = null;
-
-          });
+          error.message;
 
 
       }
-
-
-    }
-
-
-
-    /*************************************************
-     * MOSTRAR RESULTADO
-     *************************************************/
-
-    function mostrarResultado(
-      titulo,
-      detalle,
-      clase
-    ) {
-
-
-      const resultado =
-        document.getElementById(
-          'resultado'
-        );
-
-
-      resultado.className =
-        'tarjeta ' + clase;
-
-
-      resultado.innerHTML =
-
-        '<div class="estado">' +
-
-        titulo +
-
-        '</div>' +
-
-        '<div class="nombre">' +
-
-        detalle +
-
-        '</div>';
-
-
-    }
-
-
-
-    /*************************************************
-     * MOSTRAR RESUMEN
-     *
-     * Se conserva para no perder la estructura
-     * del sistema que ya teníamos.
-     *************************************************/
-
-    function mostrarResumen() {
-
-
-      fetch(
-
-
-        API_URL,
-
-
-        {
-
-
-          method: 'POST',
-
-
-          body: JSON.stringify({
-
-
-            accion: 'RESUMEN'
-
-
-          }),
-
-
-          redirect: 'follow'
-
-
-        }
-
-
-      )
-
-
-      .then(function(respuesta) {
-
-
-        if (!respuesta.ok) {
-
-
-          throw new Error(
-            'HTTP ' +
-            respuesta.status
-          );
-
-
-        }
-
-
-        return respuesta.json();
-
-
-      })
-
-
-      .then(function(data) {
-
-
-        if (!data.ok) {
-
-
-          alert(
-            data.mensaje ||
-            'No se pudo obtener el resumen.'
-          );
-
-
-          return;
-
-        }
-
-
-        document
-          .getElementById('resumen')
-          .classList
-          .remove('oculto');
-
-
-        document
-          .getElementById('contador')
-          .innerText =
-
-          'Presentes: ' +
-
-          data.presentes.length +
-
-          ' / ' +
-
-          data.total;
-
-
-        const presentes =
-          document.getElementById(
-            'presentes'
-          );
-
-
-        const ausentes =
-          document.getElementById(
-            'ausentes'
-          );
-
-
-        presentes.innerHTML = '';
-
-        ausentes.innerHTML = '';
-
-
-        data.presentes.forEach(
-          function(estudiante) {
-
-
-            presentes.innerHTML +=
-
-              '<div class="estudiante">' +
-
-              estudiante.id +
-
-              ' — ' +
-
-              estudiante.nombre +
-
-              '</div>';
-
-
-          }
-        );
-
-
-        data.ausentes.forEach(
-          function(estudiante) {
-
-
-            ausentes.innerHTML +=
-
-              '<div class="estudiante">' +
-
-              estudiante.id +
-
-              ' — ' +
-
-              estudiante.nombre +
-
-              '</div>';
-
-
-          }
-        );
-
-
-      })
-
-
-      .catch(function(error) {
-
-
-        console.error(error);
-
-
-        alert(
-          'Error al obtener el resumen.'
-        );
-
-
-      });
 
 
     }
