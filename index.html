@@ -6,7 +6,6 @@
 
   <title>QAG — Control de asistencia</title>
 
-  <!-- Lector QR: solo decodifica, NO controla la cámara -->
   <script src="https://cdn.jsdelivr.net/npm/jsqr@1.4.0/dist/jsQR.js"></script>
 
   <style>
@@ -16,149 +15,96 @@
 
     body {
       margin: 0;
-      padding: 20px;
       font-family: Arial, sans-serif;
       background: #f2f2f2;
       color: #222;
+      text-align: center;
     }
 
     .contenedor {
-      max-width: 700px;
-      margin: auto;
+      max-width: 600px;
+      margin: 0 auto;
+      padding: 20px;
     }
 
     h1 {
-      text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 5px;
     }
 
-    .tarjeta {
-      background: white;
-      border-radius: 14px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-    }
-
-    label {
-      display: block;
-      font-weight: bold;
-      margin-bottom: 8px;
+    .subtitulo {
+      color: #666;
+      margin-top: 0;
+      margin-bottom: 25px;
     }
 
     select,
     button {
       width: 100%;
       padding: 14px;
-      font-size: 17px;
-      border-radius: 10px;
+      font-size: 18px;
+      border-radius: 8px;
       border: 1px solid #ccc;
+      margin-bottom: 15px;
     }
 
     button {
-      margin-top: 12px;
-      cursor: pointer;
-      font-weight: bold;
       background: #222;
       color: white;
       border: none;
+      cursor: pointer;
     }
 
-    button:active {
-      transform: scale(0.98);
+    button:hover {
+      background: #444;
     }
 
-    #lector {
-      position: relative;
-      background: #000;
-      border-radius: 14px;
-      overflow: hidden;
-      min-height: 250px;
-    }
-
-    #video {
+    #camara {
       width: 100%;
-      height: auto;
-      display: block;
-      background: #000;
+      max-width: 500px;
+      border-radius: 12px;
+      background: black;
+      margin-top: 10px;
     }
 
     #canvas {
       display: none;
     }
 
-    /* Guía visual */
-    .marco {
-      position: absolute;
-      width: 65%;
-      aspect-ratio: 1 / 1;
-      left: 17.5%;
-      top: 50%;
-      transform: translateY(-50%);
-      pointer-events: none;
-    }
-
-    .esquina {
-      position: absolute;
-      width: 35px;
-      height: 35px;
-      border-color: #00ff66;
-      border-style: solid;
-    }
-
-    .arriba-izq {
-      top: 0;
-      left: 0;
-      border-width: 4px 0 0 4px;
-    }
-
-    .arriba-der {
-      top: 0;
-      right: 0;
-      border-width: 4px 4px 0 0;
-    }
-
-    .abajo-izq {
-      bottom: 0;
-      left: 0;
-      border-width: 0 0 4px 4px;
-    }
-
-    .abajo-der {
-      bottom: 0;
-      right: 0;
-      border-width: 0 4px 4px 0;
-    }
-
-    .gris {
-      background: #eeeeee;
-    }
-
-    .verde {
-      background: #d9f7df;
-      border-left: 6px solid #19a347;
-    }
-
-    .rojo {
-      background: #ffdede;
-      border-left: 6px solid #d22;
-    }
-
-    .estado {
+    #estado {
+      margin-top: 20px;
+      padding: 18px;
+      border-radius: 10px;
+      font-size: 20px;
       font-weight: bold;
-      margin-bottom: 6px;
+      min-height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
     }
 
-    .dato {
-      word-break: break-word;
-      font-size: 18px;
+    .esperando {
+      background: #e9e9e9;
+      color: #555;
     }
 
-    .nota {
-      text-align: center;
-      color: #666;
-      font-size: 14px;
+    .procesando {
+      background: #fff3cd;
+      color: #856404;
+    }
+
+    .ok {
+      background: #d4edda;
+      color: #155724;
+    }
+
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+
+    #detalle {
       margin-top: 12px;
+      font-size: 18px;
     }
   </style>
 </head>
@@ -167,258 +113,115 @@
 
   <div class="contenedor">
 
-    <h1>QAG — Control de asistencia</h1>
+    <h1>QAG</h1>
+    <p class="subtitulo">Control de asistencia</p>
 
-    <div class="tarjeta">
+    <select id="docente">
+      <option value="">Seleccionar docente</option>
+      <option value="Cecilia">Cecilia</option>
+      <option value="Silvia">Silvia</option>
+      <option value="Carolina">Carolina</option>
+      <option value="Florencia">Florencia</option>
+    </select>
 
-      <label for="docente">Docente</label>
+    <button id="botonCamara">
+      📷 INICIAR ESCÁNER
+    </button>
 
-      <select id="docente">
-        <option value="">Seleccionar docente...</option>
-        <option value="Cecilia">Cecilia</option>
-        <option value="Silvia">Silvia</option>
-        <option value="Carolina">Carolina</option>
-        <option value="Florencia">Florencia</option>
-      </select>
-
-      <button onclick="iniciarScanner()">
-        📷 INICIAR ESCÁNER
-      </button>
-
-    </div>
-
-    <div id="lector">
-
-      <video
-        id="video"
-        autoplay
-        playsinline
-        muted>
-      </video>
-
-      <div class="marco">
-        <div class="esquina arriba-izq"></div>
-        <div class="esquina arriba-der"></div>
-        <div class="esquina abajo-izq"></div>
-        <div class="esquina abajo-der"></div>
-      </div>
-
-    </div>
+    <video id="camara" autoplay playsinline></video>
 
     <canvas id="canvas"></canvas>
 
-    <div id="resultado" class="tarjeta gris">
-
-      <div class="estado">
-        ESTADO
-      </div>
-
-      <div class="dato">
-        Seleccioná un docente e iniciá el escáner.
-      </div>
-
+    <div id="estado" class="esperando">
+      Seleccioná un docente e iniciá el escáner
     </div>
 
-    <div class="nota">
-      Prueba de lectura QR — todavía no envía datos a Google Sheets.
-    </div>
+    <div id="detalle"></div>
 
   </div>
 
-
   <script>
 
-    /*
-     * =========================================================
-     * CONFIGURACIÓN
-     * =========================================================
-     */
-
     const API_URL =
-      'https://script.google.com/macros/s/AKfycbz91ha3LXqxi1y00Ol5ZMlKpovyIRuH0LaOdqrz8_-I5T09dazl29sXfhlzjqCjFEmm/exec';
+      "https://script.google.com/macros/s/AKfycbz91ha3LXqxi1y00Ol5ZMlKpovyIRuH0LaOdqrz8_-I5T09dazl29sXfhlzjqCjFEmm/exec";
 
+    const video = document.getElementById("camara");
+    const canvas = document.getElementById("canvas");
+    const ctx = canvas.getContext("2d");
 
-    /*
-     * =========================================================
-     * VARIABLES
-     * =========================================================
-     */
+    const docenteSelect = document.getElementById("docente");
+    const botonCamara = document.getElementById("botonCamara");
+
+    const estado = document.getElementById("estado");
+    const detalle = document.getElementById("detalle");
 
     let stream = null;
     let escaneando = false;
-    let temporizador = null;
+    let procesando = false;
+
+    botonCamara.addEventListener("click", iniciarEscaner);
 
 
-    /*
-     * =========================================================
-     * ELEMENTOS
-     * =========================================================
-     */
+    async function iniciarEscaner() {
 
-    const video = document.getElementById('video');
-    const canvas = document.getElementById('canvas');
-    const contexto = canvas.getContext('2d', {
-      willReadFrequently: true
-    });
+      if (procesando) return;
 
-
-    /*
-     * =========================================================
-     * INICIAR ESCÁNER
-     * =========================================================
-     */
-
-    async function iniciarScanner() {
-
-      const docente =
-        document.getElementById('docente').value;
+      const docente = docenteSelect.value;
 
       if (!docente) {
-
-        alert('Seleccioná un docente.');
-
-        return;
-      }
-
-
-      if (typeof jsQR === 'undefined') {
-
-        mostrarResultado(
-          'ERROR',
-          'No se pudo cargar el lector QR.',
-          'rojo'
+        mostrarEstado(
+          "Seleccioná primero el docente",
+          "error"
         );
-
         return;
       }
 
-
-      // Si ya había una cámara funcionando,
-      // la detenemos antes de iniciar otra.
-      detenerCamara();
-
-
-      mostrarResultado(
-        'INICIANDO CÁMARA',
-        'Esperá un momento...',
-        'gris'
-      );
-
+      detalle.textContent = "";
 
       try {
 
-        /*
-         * IMPORTANTE:
-         * Acá usamos directamente la cámara del teléfono.
-         * jsQR se ocupa únicamente de leer los cuadros.
-         */
-
         stream = await navigator.mediaDevices.getUserMedia({
-
           video: {
-            facingMode: 'environment'
+            facingMode: "environment"
           },
-
           audio: false
-
         });
-
 
         video.srcObject = stream;
 
-        await video.play();
-
-
-        /*
-         * Esperamos hasta tener las dimensiones reales
-         * del video.
-         */
-
-        if (!video.videoWidth || !video.videoHeight) {
-
-          await new Promise(function(resolve) {
-
-            video.onloadedmetadata = function() {
-              resolve();
-            };
-
-          });
-
-        }
-
-
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
-
-
         escaneando = true;
 
+        botonCamara.textContent = "📷 ESCANEANDO...";
 
-        mostrarResultado(
-          'ESCÁNER ACTIVO',
-          'Apuntá al QR. Buscando código...',
-          'gris'
+        mostrarEstado(
+          "Esperando código QR...",
+          "esperando"
         );
 
-
-        escanearFrame();
-
+        requestAnimationFrame(escanear);
 
       } catch (error) {
 
         console.error(error);
 
-        mostrarResultado(
-          'NO SE PUDO INICIAR LA CÁMARA',
-          String(error),
-          'rojo'
+        mostrarEstado(
+          "NO SE PUDO ACCEDER A LA CÁMARA",
+          "error"
         );
-
       }
-
     }
 
 
-    /*
-     * =========================================================
-     * LEER CUADROS DE LA CÁMARA
-     * =========================================================
-     */
+    function escanear() {
 
-    function escanearFrame() {
+      if (!escaneando) return;
 
-      if (!escaneando) {
-        return;
-      }
+      if (video.readyState === video.HAVE_ENOUGH_DATA) {
 
+        canvas.width = video.videoWidth;
+        canvas.height = video.videoHeight;
 
-      if (
-        video.readyState >= 2 &&
-        video.videoWidth > 0 &&
-        video.videoHeight > 0
-      ) {
-
-        /*
-         * Si cambió la resolución de la cámara,
-         * actualizamos el canvas.
-         */
-
-        if (
-          canvas.width !== video.videoWidth ||
-          canvas.height !== video.videoHeight
-        ) {
-
-          canvas.width = video.videoWidth;
-          canvas.height = video.videoHeight;
-
-        }
-
-
-        /*
-         * Copiamos un cuadro de video al canvas.
-         */
-
-        contexto.drawImage(
+        ctx.drawImage(
           video,
           0,
           0,
@@ -426,204 +229,181 @@
           canvas.height
         );
 
-
-        /*
-         * Obtenemos los píxeles.
-         */
-
-        let imagen;
-
-        try {
-
-          imagen = contexto.getImageData(
-            0,
-            0,
-            canvas.width,
-            canvas.height
-          );
-
-        } catch (error) {
-
-          console.error(error);
-
-          programarSiguienteFrame();
-
-          return;
-        }
-
-
-        /*
-         * jsQR intenta encontrar un QR
-         * dentro de toda la imagen.
-         */
+        const imageData = ctx.getImageData(
+          0,
+          0,
+          canvas.width,
+          canvas.height
+        );
 
         const codigo = jsQR(
-          imagen.data,
-          imagen.width,
-          imagen.height,
+          imageData.data,
+          imageData.width,
+          imageData.height,
           {
-            inversionAttempts: 'attemptBoth'
+            inversionAttempts: "attemptBoth"
           }
         );
 
+        if (codigo) {
 
-        /*
-         * QR ENCONTRADO
-         */
-
-        if (codigo && codigo.data) {
+          console.log("QR DETECTADO:", codigo.data);
 
           escaneando = false;
 
           detenerCamara();
 
-
-          mostrarResultado(
-            'QR DETECTADO ✓',
-            codigo.data,
-            'verde'
-          );
-
-
-          console.log(
-            'QR DETECTADO:',
-            codigo.data
-          );
-
-
-          /*
-           * POR AHORA NO ENVIAMOS NADA A GOOGLE SHEETS.
-           *
-           * El objetivo de esta prueba es comprobar
-           * que el teléfono efectivamente lea:
-           *
-           * QAG001
-           *
-           * Una vez confirmado eso, conectamos esta parte
-           * con el procesamiento de asistencia.
-           */
+          registrarAsistencia(codigo.data);
 
           return;
         }
-
       }
 
-
-      programarSiguienteFrame();
-
-    }
-
-
-    /*
-     * =========================================================
-     * PROGRAMAR PRÓXIMO CUADRO
-     * =========================================================
-     */
-
-    function programarSiguienteFrame() {
-
-      if (!escaneando) {
-        return;
-      }
-
-
-      temporizador = setTimeout(function() {
-
-        requestAnimationFrame(
-          escanearFrame
-        );
-
+      setTimeout(() => {
+        requestAnimationFrame(escanear);
       }, 100);
-
     }
 
-
-    /*
-     * =========================================================
-     * DETENER CÁMARA
-     * =========================================================
-     */
 
     function detenerCamara() {
 
       escaneando = false;
 
-
-      if (temporizador) {
-
-        clearTimeout(temporizador);
-
-        temporizador = null;
-
-      }
-
-
       if (stream) {
 
-        stream.getTracks().forEach(function(track) {
-
+        stream.getTracks().forEach(track => {
           track.stop();
-
         });
 
         stream = null;
-
       }
-
 
       video.srcObject = null;
 
+      botonCamara.textContent = "📷 INICIAR ESCÁNER";
     }
 
 
-    /*
-     * =========================================================
-     * MOSTRAR RESULTADO
-     * =========================================================
-     */
+    async function registrarAsistencia(id) {
 
-    function mostrarResultado(
-      titulo,
-      mensaje,
-      clase
-    ) {
+      if (procesando) return;
 
-      const resultado =
-        document.getElementById('resultado');
+      procesando = true;
 
+      const docente = docenteSelect.value;
 
-      resultado.className =
-        'tarjeta ' + clase;
+      mostrarEstado(
+        "PROCESANDO ASISTENCIA...",
+        "procesando"
+      );
+
+      detalle.textContent =
+        "QR detectado: " + id;
 
 
-      resultado.innerHTML =
+      try {
 
-        '<div class="estado">' +
-          titulo +
-        '</div>' +
+        const respuesta = await fetch(API_URL, {
 
-        '<div class="dato">' +
-          escaparHTML(mensaje) +
-        '</div>';
+          method: "POST",
 
+          body: JSON.stringify({
+            accion: "REGISTRAR",
+            id: id,
+            docente: docente
+          }),
+
+          redirect: "follow"
+        });
+
+
+        if (!respuesta.ok) {
+          throw new Error(
+            "HTTP " + respuesta.status
+          );
+        }
+
+
+        const datos = await respuesta.json();
+
+        console.log("RESPUESTA DEL SERVIDOR:", datos);
+
+
+        if (datos.ok) {
+
+          if (datos.estado === "REGISTRADO") {
+
+            mostrarEstado(
+              "✓ ASISTENCIA REGISTRADA",
+              "ok"
+            );
+
+            detalle.innerHTML =
+              "<strong>" +
+              (datos.detalle || "") +
+              "</strong><br>" +
+              (datos.clase || "");
+
+          }
+
+          else if (datos.estado === "YA REGISTRADO") {
+
+            mostrarEstado(
+              "⚠ YA REGISTRADO",
+              "procesando"
+            );
+
+            detalle.textContent =
+              datos.mensaje || "";
+          }
+
+          else {
+
+            mostrarEstado(
+              datos.mensaje || "OPERACIÓN COMPLETADA",
+              "ok"
+            );
+          }
+
+        } else {
+
+          mostrarEstado(
+            datos.mensaje || "ERROR",
+            "error"
+          );
+
+          detalle.textContent =
+            datos.detalle || "";
+        }
+
+
+      } catch (error) {
+
+        console.error(
+          "ERROR AL REGISTRAR:",
+          error
+        );
+
+        mostrarEstado(
+          "ERROR DE CONEXIÓN CON EL SERVIDOR",
+          "error"
+        );
+
+        detalle.textContent =
+          "La asistencia NO fue confirmada.";
+
+      } finally {
+
+        procesando = false;
+      }
     }
 
 
-    /*
-     * =========================================================
-     * SEGURIDAD PARA MOSTRAR TEXTO DEL QR
-     * =========================================================
-     */
+    function mostrarEstado(texto, clase) {
 
-    function escaparHTML(texto) {
+      estado.textContent = texto;
 
-      return String(texto)
-        .replace(/&/g, '&amp;')
-        .replace(/</g, '&lt;')
-        .replace(/>/g, '&gt;')
-        .replace(/"/g, '&quot;')
-        .replace(/'/g, '&#039;');
-
+      estado.className = clase;
     }
 
   </script>
