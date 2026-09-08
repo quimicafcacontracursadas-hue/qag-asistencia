@@ -54,10 +54,6 @@
       cursor: pointer;
     }
 
-    button:hover {
-      background: #444;
-    }
-
     #camara {
       width: 100%;
       max-width: 500px;
@@ -149,30 +145,43 @@
     const canvas = document.getElementById("canvas");
     const ctx = canvas.getContext("2d");
 
-    const docenteSelect = document.getElementById("docente");
-    const botonCamara = document.getElementById("botonCamara");
+    const docenteSelect =
+      document.getElementById("docente");
 
-    const estado = document.getElementById("estado");
-    const detalle = document.getElementById("detalle");
+    const botonCamara =
+      document.getElementById("botonCamara");
+
+    const estado =
+      document.getElementById("estado");
+
+    const detalle =
+      document.getElementById("detalle");
 
     let stream = null;
     let escaneando = false;
     let procesando = false;
 
-    botonCamara.addEventListener("click", iniciarEscaner);
+
+    botonCamara.addEventListener(
+      "click",
+      iniciarEscaner
+    );
 
 
     async function iniciarEscaner() {
 
       if (procesando) return;
 
-      const docente = docenteSelect.value;
+      const docente =
+        docenteSelect.value;
 
       if (!docente) {
+
         mostrarEstado(
           "Seleccioná primero el docente",
           "error"
         );
+
         return;
       }
 
@@ -180,18 +189,20 @@
 
       try {
 
-        stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            facingMode: "environment"
-          },
-          audio: false
-        });
+        stream =
+          await navigator.mediaDevices.getUserMedia({
+            video: {
+              facingMode: "environment"
+            },
+            audio: false
+          });
 
         video.srcObject = stream;
 
         escaneando = true;
 
-        botonCamara.textContent = "📷 ESCANEANDO...";
+        botonCamara.textContent =
+          "📷 ESCANEANDO...";
 
         mostrarEstado(
           "Esperando código QR...",
@@ -216,10 +227,16 @@
 
       if (!escaneando) return;
 
-      if (video.readyState === video.HAVE_ENOUGH_DATA) {
+      if (
+        video.readyState ===
+        video.HAVE_ENOUGH_DATA
+      ) {
 
-        canvas.width = video.videoWidth;
-        canvas.height = video.videoHeight;
+        canvas.width =
+          video.videoWidth;
+
+        canvas.height =
+          video.videoHeight;
 
         ctx.drawImage(
           video,
@@ -229,31 +246,39 @@
           canvas.height
         );
 
-        const imageData = ctx.getImageData(
-          0,
-          0,
-          canvas.width,
-          canvas.height
-        );
+        const imageData =
+          ctx.getImageData(
+            0,
+            0,
+            canvas.width,
+            canvas.height
+          );
 
-        const codigo = jsQR(
-          imageData.data,
-          imageData.width,
-          imageData.height,
-          {
-            inversionAttempts: "attemptBoth"
-          }
-        );
+        const codigo =
+          jsQR(
+            imageData.data,
+            imageData.width,
+            imageData.height,
+            {
+              inversionAttempts:
+                "attemptBoth"
+            }
+          );
 
         if (codigo) {
 
-          console.log("QR DETECTADO:", codigo.data);
+          console.log(
+            "QR DETECTADO:",
+            codigo.data
+          );
 
           escaneando = false;
 
           detenerCamara();
 
-          registrarAsistencia(codigo.data);
+          registrarAsistencia(
+            codigo.data
+          );
 
           return;
         }
@@ -271,16 +296,19 @@
 
       if (stream) {
 
-        stream.getTracks().forEach(track => {
-          track.stop();
-        });
+        stream
+          .getTracks()
+          .forEach(track => {
+            track.stop();
+          });
 
         stream = null;
       }
 
       video.srcObject = null;
 
-      botonCamara.textContent = "📷 INICIAR ESCÁNER";
+      botonCamara.textContent =
+        "📷 INICIAR ESCÁNER";
     }
 
 
@@ -290,7 +318,8 @@
 
       procesando = true;
 
-      const docente = docenteSelect.value;
+      const docente =
+        docenteSelect.value;
 
       mostrarEstado(
         "PROCESANDO ASISTENCIA...",
@@ -301,37 +330,89 @@
         "QR detectado: " + id;
 
 
+      const datosEnviar = {
+        accion: "REGISTRAR",
+        id: id,
+        docente: docente
+      };
+
+
       try {
 
-        const respuesta = await fetch(API_URL, {
+        /*
+         * IMPORTANTE:
+         *
+         * No usamos Content-Type.
+         * Google Apps Script recibe
+         * el JSON directamente desde
+         * e.postData.contents.
+         */
 
-          method: "POST",
+        const respuesta =
+          await fetch(
+            API_URL,
+            {
+              method: "POST",
 
-          body: JSON.stringify({
-            accion: "REGISTRAR",
-            id: id,
-            docente: docente
-          }),
+              body: JSON.stringify(
+                datosEnviar
+              ),
 
-          redirect: "follow"
-        });
+              redirect: "follow"
+            }
+          );
+
+
+        const texto =
+          await respuesta.text();
+
+        console.log(
+          "RESPUESTA CRUDA:",
+          texto
+        );
 
 
         if (!respuesta.ok) {
+
           throw new Error(
-            "HTTP " + respuesta.status
+            "HTTP " +
+            respuesta.status
           );
         }
 
 
-        const datos = await respuesta.json();
+        let datos;
 
-        console.log("RESPUESTA DEL SERVIDOR:", datos);
+        try {
+
+          datos =
+            JSON.parse(texto);
+
+        } catch (error) {
+
+          console.error(
+            "RESPUESTA NO JSON:",
+            texto
+          );
+
+          throw new Error(
+            "El servidor no devolvió JSON."
+          );
+        }
+
+
+        console.log(
+          "RESPUESTA DEL SERVIDOR:",
+          datos
+        );
 
 
         if (datos.ok) {
 
-          if (datos.estado === "REGISTRADO") {
+          if (
+            datos.estado ===
+            "REGISTRADO"
+          ) {
 
             mostrarEstado(
               "✓ ASISTENCIA REGISTRADA",
@@ -346,7 +427,10 @@
 
           }
 
-          else if (datos.estado === "YA REGISTRADO") {
+          else if (
+            datos.estado ===
+            "DUPLICADO"
+          ) {
 
             mostrarEstado(
               "⚠ YA REGISTRADO",
@@ -354,13 +438,15 @@
             );
 
             detalle.textContent =
-              datos.mensaje || "";
+              datos.detalle || "";
+
           }
 
           else {
 
             mostrarEstado(
-              datos.mensaje || "OPERACIÓN COMPLETADA",
+              datos.mensaje ||
+              "OPERACIÓN COMPLETADA",
               "ok"
             );
           }
@@ -368,7 +454,8 @@
         } else {
 
           mostrarEstado(
-            datos.mensaje || "ERROR",
+            datos.mensaje ||
+            "ERROR",
             "error"
           );
 
@@ -390,7 +477,7 @@
         );
 
         detalle.textContent =
-          "La asistencia NO fue confirmada.";
+          "No se pudo completar la comunicación con Apps Script.";
 
       } finally {
 
@@ -399,11 +486,16 @@
     }
 
 
-    function mostrarEstado(texto, clase) {
+    function mostrarEstado(
+      texto,
+      clase
+    ) {
 
-      estado.textContent = texto;
+      estado.textContent =
+        texto;
 
-      estado.className = clase;
+      estado.className =
+        clase;
     }
 
   </script>
